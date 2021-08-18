@@ -1,6 +1,8 @@
 ﻿@page "/payloads"
-
 <!-- TODO: Add using and inject statements -->
+@using CP380_B1_BlockList.Models
+@using CP380_B3_BlockBlazor.Data
+@inject PendingTransactionService PendingTransactionService
 
 <h3>Pending Transactions</h3>
 
@@ -13,6 +15,27 @@ else
     <!-- TODO: Render a table with all of the pending transactions 
                This table should include all of the fields for each pending transaction
       -->
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">User</th>
+          <th scope="col">TransactionType</th>
+          <th scope="col">Amount</th>
+          <th scope="col">Item</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var item in payloads)
+        {
+            <tr>
+                <td>@item.User</td>           
+                <td>@item.TransactionType</td>
+                <td>@item.Amount</td>           
+                <td>@item.Item</td>           
+            </tr>
+        }
+      </tbody>
+    </table>
 }
 
 <p></p>
@@ -24,13 +47,14 @@ else
 
 
 @code {
-    private IEnumerable<Payload> payloads;
+    IEnumerable<Payload> payloads;
     private Payload Payload = new Payload("", 0, 0, "");
     private string submitResponse = "";
 
     protected override async Task OnInitializedAsync()
     {
         // TODO: Fetch all the payloads from the service
+        payloads = await PendingTransactionService.ListPayloads();
     }
 
     private async Task HandleValidSubmit()
