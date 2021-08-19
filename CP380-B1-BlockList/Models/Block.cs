@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -32,14 +31,8 @@ namespace CP380_B1_BlockList.Models
         public string CalculateHash()
         {
             var sha256 = SHA256.Create();
-            var json = JsonSerializer.Serialize(Data);
-
-            //
-            // TODO - Done
-            //                
-            var inputStr = $"{this.TimeStamp:yyyy-MM-dd h:mm:ss tt}-{this.PreviousHash}-{this.Nonce}-{json}"; // TODO
-
-            var inputBytes = Encoding.ASCII.GetBytes(inputStr);
+            var inputData = JsonSerializer.Serialize(Data);
+            var inputBytes = Encoding.ASCII.GetBytes($"{TimeStamp:yyyy-MM-dd hh:mm:ss tt}-{PreviousHash}-{Nonce}-{inputData}");
             var outputBytes = sha256.ComputeHash(inputBytes);
 
             return Base64UrlEncoder.Encode(outputBytes);
@@ -47,14 +40,26 @@ namespace CP380_B1_BlockList.Models
 
         public void Mine(int difficulty)
         {
-            // TODO - Done
-            string hashValue = new('C', difficulty);
-
-            while (Hash.Substring(0, difficulty) != hashValue)
+            int currentDifficulty = GetDifficulty();
+            if (currentDifficulty == difficulty)
             {
-                this.Nonce++;
-                Hash = CalculateHash();
+                return;
             }
+            Nonce++;
+            Hash = CalculateHash();
+            Mine(difficulty);
+        }
+
+        public int GetDifficulty()
+        {
+            var currentDifficulty = 0;
+
+            while (Hash[currentDifficulty] == 'C')
+            {
+                currentDifficulty++;
+            }
+
+            return currentDifficulty;
         }
     }
 }

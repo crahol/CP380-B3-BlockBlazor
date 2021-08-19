@@ -6,7 +6,8 @@ using System.Text.Json;
 using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using CP380_B1_BlockList.Models;
-using Microsoft.AspNetCore.Mvc;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace CP380_B3_BlockBlazor.Data
 {
@@ -16,16 +17,16 @@ namespace CP380_B3_BlockBlazor.Data
         //       - httpClient
         //       - configuration
         //
-        static HttpClient _clientFactory;
+        public List<Payload> payloads { get; set; }
+        private readonly HttpClient _httpClient = new HttpClient();
         private readonly IConfiguration _configuration;
 
         //
         // TODO: Add a constructor with IConfiguration and IHttpClientFactory arguments
-        //        
+        // 
         public PendingTransactionService() { }
-        public PendingTransactionService(IConfiguration configuration, IHttpClientFactory httpClientFactory)
+        public PendingTransactionService(IConfiguration configuration)
         {
-            _clientFactory = httpClientFactory.CreateClient();
             _configuration = configuration.GetSection("PayloadService");
         }
 
@@ -35,14 +36,16 @@ namespace CP380_B3_BlockBlazor.Data
         //
         public async Task<IEnumerable<Payload>> ListPayloads()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, _configuration["url"]);
-            var response = await _clientFactory.SendAsync(request);
+            IEnumerable<Payload> payloadList = null;
+            
+            var response = await _httpClient.GetAsync("http://localhost:46688/PendingPayloads");
             if (response.IsSuccessStatusCode)
             {
-                var responseStream = await response.Content.ReadAsStreamAsync();
-                return await JsonSerializer.DeserializeAsync<IEnumerable<Payload>>(responseStream);
+                string responseStream = await response.Content.ReadAsStringAsync();
+                var jsonResult = JsonConvert.DeserializeObject(responseStream).ToString();
+                payloadList = JsonConvert.DeserializeObject<IEnumerable<Payload>>(jsonResult);
             }
-            return Array.Empty<Payload>();
+            return payloadList;
         }
 
         //
@@ -50,6 +53,17 @@ namespace CP380_B3_BlockBlazor.Data
         //       and accepts a Payload object.
         //       This method should POST the Payload to the web API server
         //
-
+        public async Task<HttpResponseMessage> AddPayload(Payload payload)
+        {
+            var httpRequestMessage = new HttpRequestMessage()
+            {
+                Method = new HttpMethod("POST"),
+                RequestUri = new Uri("http://localhost:46688/AddPayload"),
+                Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json"),
+            };
+            HttpResponseMessage response = await _httpClient.SendAsync(httpRequestMessage);
+            
+            return response;
+        }
     }
 }

@@ -1,18 +1,27 @@
 ﻿@page "/blocks"
-<!-- TODO: Add using and inject statements -->
+
 @using CP380_B1_BlockList.Models
-@using CP380_B3_BlockBlazor.Data
-@inject BlockService BlockService
+@using Data
 
 <h3>Blocks</h3>
 
 @if (blocklist == null)
 {
-    <p><em>Loading...</em></p>
-}
+    <p><em>Loading...</em></p> }
 else
 {
-    <div class="card-columns">        
+    <html>
+    <head>
+        
+    </head>
+    <body>
+        <div class="right">
+            <button class="btn btn-primary" @onclick="MineBlock">
+                Mine Block
+            </button>
+        </div>
+  
+        <div class="card-columns">
         <!-- TODO: Add cards for each block in the block list
 
                    Each card should show:
@@ -28,6 +37,7 @@ else
         {
             <div class="card">            
                 <div class="card-body">Position: @count
+                  <p class="card-text">TimeStamp: @item.TimeStamp</p>
                   <p class="card-text">Hash: @item.Hash</p>
                   <p class="card-text">Nonce: @item.Nonce</p>
                   <p class="card-text">PreviousHash: @item.PreviousHash</p>
@@ -36,14 +46,27 @@ else
             ++count;
         }
     </div>
+
+    </body>
+</html>
+
 }
 
-@code {
-    IEnumerable<Block> blocklist;
+@code { IEnumerable<Block> blocklist;
+    BlockService service = new BlockService();
+    PendingTransactionService pendingTransactionService = new PendingTransactionService();
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: fetch blocks from the BlockService        
-        blocklist = await BlockService.ListBlocks();
+        blocklist = (await service.ListBlocks()).ToList();
     }
+
+    private async void MineBlock()
+    {
+        MiningService miningService = new MiningService(service, pendingTransactionService);
+        Task<Block> blockNew = miningService.MineBlock(blocklist);
+        Task<Block> block = service.SubmitNewBlockAsync(blockNew.Result);
+
+        blocklist = (await service.ListBlocks()).ToList();
+    } 
 }

@@ -1,66 +1,155 @@
 ﻿@page "/payloads"
-<!-- TODO: Add using and inject statements -->
+
 @using CP380_B1_BlockList.Models
-@using CP380_B3_BlockBlazor.Data
-@inject PendingTransactionService PendingTransactionService
+@using Data
 
 <h3>Pending Transactions</h3>
 
 @if (payloads == null)
 {
-    <p><em>Loading...</em></p>
-}
+    <p><em>Loading...</em></p> }
 else
 {
-    <!-- TODO: Render a table with all of the pending transactions 
-               This table should include all of the fields for each pending transaction
-      -->
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">User</th>
-          <th scope="col">TransactionType</th>
-          <th scope="col">Amount</th>
-          <th scope="col">Item</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach (var item in payloads)
-        {
-            <tr>
-                <td>@item.User</td>           
-                <td>@item.TransactionType</td>
-                <td>@item.Amount</td>           
-                <td>@item.Item</td>           
-            </tr>
-        }
-      </tbody>
-    </table>
+    <html>
+    <head>
+        <style>                                 
+            .form {
+                margin-right: -250px !important;
+                margin-left: 100px !important;
+                padding-top: 15px !important;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th scope="col">TransactionType</th>
+                        <th scope="col">Item</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (Payload payload in payloads)
+                    {
+                        <tr>
+                            @if (payload == null)
+                            {
+                                <td scope="row">No Payloads to display</td>
+
+                            }
+                            else
+                            {
+
+
+                                <td scope="row">@payload.TransactionType.ToString()</td>
+                                <td>@payload.Item</td>
+                                <td>@payload.Amount</td>
+                                <td>@payload.User</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        </div>
+        <p></p>
+
+        <p>@submitResponse</p>
+
+
+
+        <EditForm Model="@Payload">
+            <h3>Add Pending Payloads</h3>
+            <hr />
+
+
+            <div class="form-group row form">
+                <div class="col-md-4 pl-0">
+                    <label for="firstName" class="form-label">
+                        User
+                    </label>
+
+                    <InputText id="User" class="form-control" placeholder="User"
+                               @bind-Value="Payload.User" />
+                </div>
+
+
+                <div class="col-md-4 pr-0">
+                    <label for="lastName" class="form-label">
+                        Transaction Type
+                    </label>
+                    <InputSelect id="TransactionType" class="form-control" placeholder="Select Transaction Type" @bind-Value="Payload.TransactionType">
+                       
+                        <option value="3">BUY</option>
+                        <option value="1">SELL</option>
+                        <option value="2">GRANT</option>
+                    </InputSelect>
+
+                </div>
+            </div>
+
+
+
+            <div class="form-group row form">
+                <div class="col-md-4 pl-0">
+                    <label for="email" class="form-label">
+                        Amount
+                    </label>
+                    <InputText id="Amount" class="form-control" placeholder="Amount"
+                               @bind-Value="amount" />
+                </div>
+
+
+                <div class="col-md-4 pr-0">
+                    <label for="item" class="form-label">
+                        Item
+                    </label>
+                    <InputText id="Item" class="form-control" placeholder="Item"
+                               @bind-Value="Payload.Item" />
+                </div>
+            </div>
+            <div class="float-right">
+                <button class="btn btn-primary" @onclick="HandleValidSubmit">
+                    Add Payload
+                </button>
+            </div>
+
+        </EditForm>
+        
+    </body>
+</html>
+
 }
-
-<p></p>
-
-<p>@submitResponse</p>
 
 
 <!-- TODO: Add EditForm to submit a new transaction to the server -->
 
 
-@code {
-    IEnumerable<Payload> payloads;
+@code { private IEnumerable<Payload> payloads;
     private Payload Payload = new Payload("", 0, 0, "");
+    String amount = "";
     private string submitResponse = "";
+    PendingTransactionService service = new PendingTransactionService();
 
     protected override async Task OnInitializedAsync()
     {
-        // TODO: Fetch all the payloads from the service
-        payloads = await PendingTransactionService.ListPayloads();
+        payloads = (await service.ListPayloads()).ToList();
     }
 
     private async Task HandleValidSubmit()
     {
-        // TODO: submit the new payload to the web API using the PendingTransactionService
-        //       - if succcessful, the payloads should be re-loaded
-        //       - if there is an error, then the submitResponse variable should be updated with the error
-    }
-}
+        Payload.Amount = Convert.ToInt32(amount);
+        HttpResponseMessage response = await service.AddPayload(Payload);
+        if (response.IsSuccessStatusCode)
+        {            
+            payloads = (await service.ListPayloads()).ToList();
+        }
+        else
+        {
+            submitResponse = response.ReasonPhrase;
+        }
+    } }
